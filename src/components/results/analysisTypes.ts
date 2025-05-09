@@ -52,7 +52,7 @@ export interface AnalysisResult {
     customProfile: string;
     explanation: string;
   };
-  masks: {
+  masks: Array<{
     type: string;
     settings: {
       light: string;
@@ -61,5 +61,5 @@ export interface AnalysisResult {
       detail: string;
     };
     explanation?: string;
-  }[];
+  }>;
 }

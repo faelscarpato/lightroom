@@ -189,7 +189,13 @@ function parseAIResponse(response: string): any {
     // Primeiro, vamos tentar encontrar um objeto JSON dentro da resposta
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const jsonString = jsonMatch[0];
+      const parsedJson = JSON.parse(jsonString);
+      
+      // Garantir que todos os campos estão presentes e são strings
+      const sanitizedResult = ensureValidResultFormat(parsedJson);
+      
+      return sanitizedResult;
     }
     
     // Se não conseguir identificar o JSON, retorna erro
@@ -201,5 +207,192 @@ function parseAIResponse(response: string): any {
       error: "Não foi possível interpretar a resposta da IA",
       rawResponse: response
     };
+  }
+}
+
+// Função para garantir que o formato do resultado é válido
+function ensureValidResultFormat(data: any): any {
+  // Cria uma estrutura básica de resultado
+  const defaultResult = {
+    light: {
+      exposure: "0",
+      contrast: "0",
+      highlights: "0",
+      shadows: "0",
+      whites: "0",
+      blacks: "0",
+      explanation: "Sem ajustes de luz recomendados."
+    },
+    color: {
+      temperature: "Como capturado",
+      tint: "0",
+      vibrance: "0",
+      saturation: "0",
+      hsl: {
+        red: "Sem ajustes",
+        orange: "Sem ajustes",
+        yellow: "Sem ajustes",
+        green: "Sem ajustes",
+        aqua: "Sem ajustes",
+        blue: "Sem ajustes",
+        purple: "Sem ajustes",
+        magenta: "Sem ajustes"
+      },
+      explanation: "Sem ajustes de cor recomendados."
+    },
+    effects: {
+      texture: "0",
+      clarity: "0",
+      dehaze: "0",
+      vignette: "Nenhum",
+      grain: "Nenhum",
+      explanation: "Sem efeitos recomendados."
+    },
+    detail: {
+      sharpness: "Padrão",
+      noiseReduction: "Nenhuma",
+      colorNoiseReduction: "0",
+      sharpnessMask: "0",
+      explanation: "Sem ajustes de detalhe recomendados."
+    },
+    optics: {
+      autoCorrections: "Desativado",
+      chromaticAberration: "Nenhuma correção",
+      manualAdjustments: "Nenhum",
+      explanation: "Sem ajustes ópticos recomendados."
+    },
+    profile: {
+      adobeProfile: "Adobe Color",
+      customProfile: "N/A",
+      explanation: "Perfil padrão recomendado."
+    },
+    masks: [{
+      type: "Exemplo (não aplicável)",
+      settings: {
+        light: "N/A",
+        color: "N/A",
+        effects: "N/A",
+        detail: "N/A"
+      },
+      explanation: "Nenhuma máscara recomendada."
+    }]
+  };
+
+  // Combina o resultado da IA com o padrão, garantindo que todos os campos existam
+  try {
+    // Light settings
+    if (data.light) {
+      for (const key in defaultResult.light) {
+        if (data.light[key] === undefined || data.light[key] === null) {
+          data.light[key] = defaultResult.light[key];
+        } else if (typeof data.light[key] !== 'string') {
+          data.light[key] = String(data.light[key]);
+        }
+      }
+    } else {
+      data.light = defaultResult.light;
+    }
+
+    // Color settings
+    if (data.color) {
+      for (const key in defaultResult.color) {
+        if (key === 'hsl') {
+          if (!data.color.hsl) data.color.hsl = {};
+          for (const hslKey in defaultResult.color.hsl) {
+            if (data.color.hsl[hslKey] === undefined || data.color.hsl[hslKey] === null) {
+              data.color.hsl[hslKey] = defaultResult.color.hsl[hslKey];
+            } else if (typeof data.color.hsl[hslKey] !== 'string') {
+              data.color.hsl[hslKey] = String(data.color.hsl[hslKey]);
+            }
+          }
+        } else {
+          if (data.color[key] === undefined || data.color[key] === null) {
+            data.color[key] = defaultResult.color[key];
+          } else if (typeof data.color[key] !== 'string') {
+            data.color[key] = String(data.color[key]);
+          }
+        }
+      }
+    } else {
+      data.color = defaultResult.color;
+    }
+
+    // Effects settings
+    if (data.effects) {
+      for (const key in defaultResult.effects) {
+        if (data.effects[key] === undefined || data.effects[key] === null) {
+          data.effects[key] = defaultResult.effects[key];
+        } else if (typeof data.effects[key] !== 'string') {
+          data.effects[key] = String(data.effects[key]);
+        }
+      }
+    } else {
+      data.effects = defaultResult.effects;
+    }
+
+    // Detail settings
+    if (data.detail) {
+      for (const key in defaultResult.detail) {
+        if (data.detail[key] === undefined || data.detail[key] === null) {
+          data.detail[key] = defaultResult.detail[key];
+        } else if (typeof data.detail[key] !== 'string') {
+          data.detail[key] = String(data.detail[key]);
+        }
+      }
+    } else {
+      data.detail = defaultResult.detail;
+    }
+
+    // Optics settings
+    if (data.optics) {
+      for (const key in defaultResult.optics) {
+        if (data.optics[key] === undefined || data.optics[key] === null) {
+          data.optics[key] = defaultResult.optics[key];
+        } else if (typeof data.optics[key] !== 'string') {
+          data.optics[key] = String(data.optics[key]);
+        }
+      }
+    } else {
+      data.optics = defaultResult.optics;
+    }
+
+    // Profile settings
+    if (data.profile) {
+      for (const key in defaultResult.profile) {
+        if (data.profile[key] === undefined || data.profile[key] === null) {
+          data.profile[key] = defaultResult.profile[key];
+        } else if (typeof data.profile[key] !== 'string') {
+          data.profile[key] = String(data.profile[key]);
+        }
+      }
+    } else {
+      data.profile = defaultResult.profile;
+    }
+
+    // Masks settings
+    if (!Array.isArray(data.masks) || data.masks.length === 0) {
+      data.masks = defaultResult.masks;
+    } else {
+      // Sanitize each mask
+      data.masks = data.masks.map(mask => {
+        const sanitizedMask = {
+          type: typeof mask.type === 'string' ? mask.type : "Máscara sem nome",
+          settings: {
+            light: typeof mask.settings?.light === 'string' ? mask.settings.light : "N/A",
+            color: typeof mask.settings?.color === 'string' ? mask.settings.color : "N/A",
+            effects: typeof mask.settings?.effects === 'string' ? mask.settings.effects : "N/A",
+            detail: typeof mask.settings?.detail === 'string' ? mask.settings.detail : "N/A"
+          },
+          explanation: typeof mask.explanation === 'string' ? mask.explanation : "Sem explicação fornecida."
+        };
+        return sanitizedMask;
+      });
+    }
+
+    return data;
+    
+  } catch (error) {
+    console.error("Erro ao sanitizar resposta:", error);
+    return defaultResult;  // Retorna o resultado padrão em caso de erro
   }
 }
