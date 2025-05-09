@@ -5,83 +5,7 @@ import Header from '@/components/Header';
 import ImageUploader from '@/components/ImageUploader';
 import CategorySelector, { PhotoCategory } from '@/components/CategorySelector';
 import ResultsDisplay, { AnalysisResult } from '@/components/ResultsDisplay';
-
-const demoResult: AnalysisResult = {
-  light: {
-    exposure: "+0.5",
-    contrast: "+15",
-    highlights: "-10",
-    shadows: "+15",
-    whites: "+5",
-    blacks: "-5",
-    explanation: "Aumentei ligeiramente a exposição para revelar mais detalhes, aumentei o contraste para dar profundidade e ajustei as sombras para preservar detalhes nas áreas escuras."
-  },
-  color: {
-    temperature: "5500K (neutro com leve aquecimento)",
-    tint: "+5 (leve magenta)",
-    vibrance: "+10",
-    saturation: "+5",
-    hsl: {
-      red: "Matiz: 0, Saturação: +5, Luminância: 0",
-      orange: "Matiz: +5, Saturação: +10, Luminância: 0",
-      yellow: "Matiz: -5, Saturação: +15, Luminância: +5",
-      green: "Matiz: 0, Saturação: -5, Luminância: 0",
-      aqua: "Matiz: +5, Saturação: +10, Luminância: 0",
-      blue: "Matiz: +10, Saturação: +5, Luminância: -5",
-      purple: "Matiz: 0, Saturação: 0, Luminância: 0",
-      magenta: "Matiz: -5, Saturação: 0, Luminância: 0"
-    },
-    explanation: "Apliquei um equilíbrio de cores neutro com leve aquecimento para melhorar os tons de pele, aumentando a vibração para cores mais vivas sem parecer artificial."
-  },
-  effects: {
-    texture: "+10",
-    clarity: "+15",
-    dehaze: "+5",
-    vignette: "Quantidade: -15, Ponto médio: 50, Arredondamento: 50, Plumagem: 50",
-    grain: "Quantidade: 0, Tamanho: 0, Rugosidade: 0",
-    explanation: "Aumentei textura e claridade para dar mais definição à imagem, com leve remoção de névoa e sutil vinheta para direcionar o olhar ao ponto focal."
-  },
-  detail: {
-    sharpness: "Quantidade: 40, Raio: 1.0, Detalhe: 25",
-    noiseReduction: "Luminância: 10, Detalhe: 50, Contraste: 0",
-    colorNoiseReduction: "25",
-    sharpnessMask: "40",
-    explanation: "Apliquei nitidez moderada para realçar detalhes sem artefatos, com suave redução de ruído para manter a textura natural."
-  },
-  optics: {
-    autoCorrections: "Ativado",
-    chromaticAberration: "Remover",
-    manualAdjustments: "Distorção: 0, Vinheta da lente: 0",
-    explanation: "Habilitei correções automáticas de lente para corrigir distorção e aberração cromática detectadas na imagem."
-  },
-  profile: {
-    adobeProfile: "Adobe Color",
-    customProfile: "N/A",
-    explanation: "O perfil Adobe Color oferece um bom equilíbrio entre saturação e contraste, mantendo a naturalidade dos tons de pele nesta fotografia."
-  },
-  masks: [
-    {
-      type: "Céu",
-      settings: {
-        light: "Exposição: -0.3, Contraste: +10",
-        color: "Temperatura: -5 (mais frio), Saturação: +10",
-        effects: "Claridade: +15, Textura: +5",
-        detail: "Nitidez: +10"
-      },
-      explanation: "Escureci levemente o céu para destacar as nuvens e adicionei mais textura e cor para um visual mais dramático."
-    },
-    {
-      type: "Sujeito Principal",
-      settings: {
-        light: "Exposição: +0.2, Sombras: +10",
-        color: "Vibração: +5, Saturação: 0",
-        effects: "Claridade: +10, Textura: +5",
-        detail: "Nitidez: +15"
-      },
-      explanation: "Aumentei levemente a exposição no sujeito para destacá-lo do fundo, com aumento de nitidez para realçar detalhes importantes."
-    }
-  ]
-};
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const { toast } = useToast();
@@ -100,7 +24,7 @@ const Index = () => {
     setResult(null); // Reset results when category changes
   };
 
-  const analyzeImage = () => {
+  const analyzeImage = async () => {
     if (!uploadedImage || !selectedCategory) {
       toast({
         title: "Erro",
@@ -112,46 +36,39 @@ const Index = () => {
 
     setIsAnalyzing(true);
 
-    // In a real application, this is where you would send the image to the API
-    // For demo purposes, we'll just set a timeout to simulate the API call
-    setTimeout(() => {
-      setResult(demoResult);
-      setIsAnalyzing(false);
+    try {
+      // Chame a Edge Function do Supabase
+      const { data, error } = await supabase.functions.invoke('analyze-photo', {
+        body: {
+          imageBase64: uploadedImage.url, // A URL já é um data URL com a imagem em base64
+          category: selectedCategory
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Erro ao analisar imagem');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      console.log('Resultado da análise:', data);
+      setResult(data);
       toast({
         title: "Análise Completa",
         description: `Imagem analisada com sucesso na categoria ${selectedCategory}.`,
       });
-    }, 2000);
-
-    // In a production application, you would implement the API call here:
-    /*
-    const formData = new FormData();
-    formData.append('image', uploadedImage.file);
-    formData.append('category', selectedCategory);
-    
-    fetch('your-api-endpoint', {
-      method: 'POST',
-      body: formData,
-    })
-      .then(response => response.json())
-      .then(data => {
-        setResult(data);
-        setIsAnalyzing(false);
-        toast({
-          title: "Análise Completa",
-          description: `Imagem analisada com sucesso na categoria ${selectedCategory}.`,
-        });
-      })
-      .catch(error => {
-        console.error('Error analyzing image:', error);
-        setIsAnalyzing(false);
-        toast({
-          title: "Erro na Análise",
-          description: "Ocorreu um erro ao analisar a imagem. Tente novamente mais tarde.",
-          variant: "destructive",
-        });
+    } catch (error) {
+      console.error('Erro ao analisar imagem:', error);
+      toast({
+        title: "Erro na Análise",
+        description: error.message || "Ocorreu um erro ao analisar a imagem. Tente novamente mais tarde.",
+        variant: "destructive",
       });
-    */
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
