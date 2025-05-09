@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ResultCard from './ResultCard';
 import {
@@ -9,7 +8,7 @@ import {
   Filter,
   Contrast,
   Palette,
-  Mask
+  Layers
 } from 'lucide-react';
 import { 
   Table,
@@ -281,7 +280,7 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result }) => {
         </Table>
       </ResultCard>
 
-      <ResultCard title="Máscaras Recomendadas" icon={<Mask size={20} />}>
+      <ResultCard title="Máscaras Recomendadas" icon={<Layers size={20} />}>
         {result.masks.map((mask, index) => (
           <div key={index} className="mb-6 last:mb-0">
             <h4 className="font-semibold text-lg mb-2">Máscara: {mask.type}</h4>
